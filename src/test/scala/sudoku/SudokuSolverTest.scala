@@ -19,7 +19,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(7),Some(6),Some(3),Some(4),Some(1),Some(8),Some(2),Some(5),Some(9)),
     )
 
-    val candidates: Set[Int] = Main.computeCandidates(Position(0,0), Main.toSudokuWithCandidates(sudoku))
+    val candidates: Set[Int] = Main.computeCandidates(SGrid(None, Set(1,2,3,4,5,6,7,8,9), Position(0,0)), Main.toSudokuWithCandidates(sudoku))
 
     assertResult(1)(candidates.size)
     assert(candidates(4))
@@ -41,8 +41,8 @@ class SudokuSolverTest extends AnyFlatSpec{
 
     val solvedSudoku = Main.solveSudoku(Main.toSudokuWithCandidates(sudoku))
 
-    assertResult(4)(solvedSudoku(0)(0).value.get)
-    assertResult(3)(solvedSudoku(5)(5).value.get)
+    assertResult(4)(solvedSudoku.v(0)(0).value.get)
+    assertResult(3)(solvedSudoku.v(5)(5).value.get)
   }
 
   "An easy sudoku" should " be solvable" in {
@@ -60,9 +60,30 @@ class SudokuSolverTest extends AnyFlatSpec{
     )
 
     val solvedSudoku = Main.solveSudoku(Main.toSudokuWithCandidates(sudoku))
-
-    assertResult(6)(solvedSudoku(0)(0).value.get)
+    Main.printSudoku(solvedSudoku)
+    assertResult(6)(solvedSudoku.v(0)(0).value.get)
 //    assertResult(3)(solvedSudoku(5)(5).value.get)
+  }
+
+
+  "An extreme sudoku" should " be solvable" in {
+
+    val sudoku: Sudoku = Array(
+      Array(Some(2), None, None, None, None, Some(8), None, Some(5), None),
+      Array(None, None, Some(3), None, None, None, None, Some(6), None),
+      Array(None, Some(7), None, None, None, Some(2), None, None, Some(4)),
+      Array(None, None, Some(6), None, None, Some(7), Some(3), None, None),
+      Array(None, None, None, Some(2), Some(4), None, None, None, Some(7)),
+      Array(None, Some(8), None, Some(6), None, None, None, None, None),
+      Array(None, None, None, None, None, None, Some(4), None, None),
+      Array(None, None, None, Some(1), Some(9), None, None, None, None),
+      Array(Some(9), Some(1), None, None, None, None, None, None, Some(3))
+    )
+
+    val solvedSudoku = Main.solveSudoku(Main.toSudokuWithCandidates(sudoku))
+    assertResult(6)(solvedSudoku.v(0)(1).value.get)
+    assertResult(4)(solvedSudoku.v(0)(2).value.get)
+    //    assertResult(3)(solvedSudoku(5)(5).value.get)
   }
 
 }
