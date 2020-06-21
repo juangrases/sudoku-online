@@ -1,7 +1,7 @@
 package sudoku
 
 import org.scalatest.flatspec.AnyFlatSpec
-import sudoku.Main.Sudoku
+import sudoku.SudokuHelper.Sudoku
 
 class SudokuSolverTest extends AnyFlatSpec{
 
@@ -19,7 +19,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(7),Some(6),Some(3),Some(4),Some(1),Some(8),Some(2),Some(5),Some(9)),
     )
 
-    val candidates: Set[Int] = Main.computeCandidates(SGrid(None, Set(1,2,3,4,5,6,7,8,9), Position(0,0)), Main.toSudokuWithCandidates(sudoku))
+    val candidates: Set[Int] = SudokuHelper.computeCandidates(SGrid(None, Set(1,2,3,4,5,6,7,8,9), Position(0,0)), SudokuHelper.toSudokuWithCandidates(sudoku))
 
     assertResult(1)(candidates.size)
     assert(candidates(4))
@@ -39,7 +39,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(7),Some(6),Some(3),Some(4),Some(1),Some(8),Some(2),Some(5),Some(9))
     )
 
-    val solvedSudoku = Main.solveSudoku(Main.toSudokuWithCandidates(sudoku))
+    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku))
 
     assertResult(4)(solvedSudoku.v(0)(0).value.get)
     assertResult(3)(solvedSudoku.v(5)(5).value.get)
@@ -59,8 +59,8 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(5), None, Some(6), None, None, Some(9), None, None, Some(7))
     )
 
-    val solvedSudoku = Main.solveSudoku(Main.toSudokuWithCandidates(sudoku))
-    Main.printSudoku(solvedSudoku)
+    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku))
+    SudokuHelper.printSudoku(solvedSudoku)
     assertResult(6)(solvedSudoku.v(0)(0).value.get)
 //    assertResult(3)(solvedSudoku(5)(5).value.get)
   }
@@ -80,7 +80,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(9), Some(1), None, None, None, None, None, None, Some(3))
     )
 
-    val solvedSudoku = Main.solveSudoku(Main.toSudokuWithCandidates(sudoku))
+    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku))
     assertResult(6)(solvedSudoku.v(0)(1).value.get)
     assertResult(4)(solvedSudoku.v(0)(2).value.get)
     //    assertResult(3)(solvedSudoku(5)(5).value.get)

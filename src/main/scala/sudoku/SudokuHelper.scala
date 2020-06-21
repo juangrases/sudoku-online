@@ -3,7 +3,7 @@ package sudoku
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-object Main {
+object SudokuHelper {
 
 
   type Sudoku = Array[Array[Option[Int]]]
@@ -51,32 +51,30 @@ object Main {
     })
   }
 
-  private def solveSudokuI(s: SudokuWithCandidates, lastSolved: Option[SGrid], loop: Int = 0): Option[SudokuWithCandidates] = {
-    println(s"-- $loop --- last solved was ${lastSolved.map(_.position)} with value ${lastSolved.flatMap(_.value)}")
+  private def solveSudokuI(s: SudokuWithCandidates, lastSolved: Option[SGrid]): Option[SudokuWithCandidates] = {
     printSudoku(s)
-    println(s"Still ${s.v.flatten.count(_.value.isEmpty)} to be filled")
-    if(s.v.flatten.forall(_.value.isDefined)) return Some(s)
-    println(s"Updating candidates after last solved")
+    if (s.v.flatten.forall(_.value.isDefined)) return Some(s)
 
     val updatedSudokuOpt = lastSolved.map(ls => updateCandidatesFromLastSolved(s, ls)).getOrElse(Success(s))
     updatedSudokuOpt match {
       case Success(updatedSudoku) =>
         val toBesSolvedGrid = s.v.flatten.filter(_.value.isEmpty).minBy(_.candidates.size)
-        toBesSolvedGrid.candidates.map{ c =>
-          println(s"Solving with candidate $c")
-          val solvedGrid = toBesSolvedGrid.copy(value = Some(c))
-          s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid
-          solveSudokuI(updatedSudoku, Some(solvedGrid), loop + 1) match {
-            case None =>
-              println(s"Something went wrong, removing value ${solvedGrid.value.get}")
-              s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid.copy(value = None, candidates = Set(1,2,3,4,5,6,7,8,9))
-              resetCandidates(s, solvedGrid)
-              None
-            case a =>
-              println("We got a good result so far")
-              a
+        toBesSolvedGrid.candidates.foldLeft(Option.empty[SudokuWithCandidates]) { case (resultOpt, c) =>
+          if (resultOpt.isDefined) {
+            resultOpt
+          } else {
+            val solvedGrid = toBesSolvedGrid.copy(value = Some(c))
+            s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid
+            solveSudokuI(updatedSudoku, Some(solvedGrid)) match {
+              case None =>
+                s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid.copy(value = None, candidates = Set(1, 2, 3, 4, 5, 6, 7, 8, 9))
+                resetCandidates(s, solvedGrid)
+                None
+              case a =>
+                a
+            }
           }
-        }.headOption.flatten
+        }
 
       case Failure(exception) =>
         println(exception.getMessage)
@@ -110,16 +108,6 @@ object Main {
 
   }
 
-
-  private def solveGridWithLessCandidates(s: SudokuWithCandidates) = {
-    val toBesSolvedGrid = s.v.flatten.filter(_.value.isEmpty).minBy(_.candidates.size)
-    if (toBesSolvedGrid.candidates.isEmpty) {
-      throw new Exception("foo")
-    }
-    val solvedGrid = toBesSolvedGrid.copy(value = Some(toBesSolvedGrid.candidates.head))
-    s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid
-    solvedGrid
-  }
 
   private def getGridsFromSameColumn(s: SudokuWithCandidates, g: SGrid): Array[SGrid] = {
     s.v.foldLeft(Array[SGrid]()) {
@@ -156,7 +144,7 @@ object Main {
   def computeCandidates(p: SGrid, s: SudokuWithCandidates): Set[Int] = {
     //Grid starts with all candidates
     //TODO: Make this structure better
-    val grid = SGrid(None, Set(1,2,3,4,5,6,7,8,9), p.position)
+    val grid = SGrid(None, Set(1, 2, 3, 4, 5, 6, 7, 8, 9), p.position)
     val reducedByRow = reduceCandidatesFromRow(grid, s)
     val reducedByRowAndColumn = reduceCandidatesFromColumn(reducedByRow, s)
     val candidates = reduceCandidatesFromSquare(reducedByRowAndColumn, s).candidates
