@@ -1,7 +1,7 @@
 import React from 'react'
 import Grid from './Grid'
 
-const socket = new WebSocket('ws://localhost:8080/chat');
+const socket = new WebSocket('ws://localhost:8080/game');
 console.log("When this renders")
 class Sudoku extends React.Component {
 
@@ -27,11 +27,6 @@ class Sudoku extends React.Component {
 			const sudoku = JSON.parse(message)
 			this.setState({sudoku})
 		};
-	}
-
-	submitChange = (message) =>{
-		//FIXME: reference to socket not solved
-		socket.send(message);
 	}
 
 
