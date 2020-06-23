@@ -23,8 +23,8 @@ object WebServer {
     val theChat = Game.create()
 
     //For every browser websocket connection, a Flow is created
-    // This flow received a Message from client and transform it to a new Message respond to the client
-    def websocketChatFlow(): Flow[Message, Message, Any] =
+    def websocketGameFlow(): Flow[Message, Message, Any] =
+      //TODO: extract Json, validate sudoku is still valid, if so, continue, if not, fail
       Flow[Message]
         .via(theChat.gameFlow()) // ... and route them through the chatFlow ...
           .via(reportErrorsFlow) // ... then log any processing errors on stdin
@@ -39,26 +39,17 @@ object WebServer {
 
     val route =
       concat(
-        path("examples") {
-          getFromBrowseableDirectories("src/main/public")
-        },
-        path("hello") {
-          get {
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
-          }
-        },
         pathPrefix("public") {
           extractUnmatchedPath { remaining =>
             getFromFile(s"src/main/public$remaining")
           }
         },
         path("game") {
-          handleWebSocketMessages(websocketChatFlow())
+          handleWebSocketMessages(websocketGameFlow())
         }
       )
 
-    val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
-//    val bindingFuture2 = Http().bindAndHandleSync(requestHandler, "localhost", 8081)
+    val bindingFuture = Http().bindAndHandle(route, "192.168.1.16", 8080)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine() // let it run until user presses return
