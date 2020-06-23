@@ -10,12 +10,14 @@ object SudokuHelper {
 
   case class SudokuWithCandidates(v: Array[Array[SGrid]])
 
+  private val ALL_CANDIDATES = Set(1, 2, 3, 4, 5, 6, 7, 8, 9)
+
 
   def toSudokuWithCandidates(s: Sudoku): SudokuWithCandidates = {
     SudokuWithCandidates(s.view.zipWithIndex.map { case (row, rowIndex) =>
       row.view.zipWithIndex.map { case (value, columnIndex) =>
         val position = Position(columnIndex, rowIndex)
-        SGrid(value, Set(1, 2, 3, 4, 5, 6, 7, 8, 9), position)
+        SGrid(value, ALL_CANDIDATES, position)
       }.toArray
     }.toArray)
   }
@@ -52,7 +54,7 @@ object SudokuHelper {
   }
 
   private def solveSudokuI(s: SudokuWithCandidates, lastSolved: Option[SGrid]): Option[SudokuWithCandidates] = {
-    printSudoku(s)
+//    printSudoku(s)
     if (s.v.flatten.forall(_.value.isDefined)) return Some(s)
 
     val updatedSudokuOpt = lastSolved.map(ls => updateCandidatesFromLastSolved(s, ls)).getOrElse(Success(s))
@@ -67,17 +69,15 @@ object SudokuHelper {
             s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid
             solveSudokuI(updatedSudoku, Some(solvedGrid)) match {
               case None =>
-                s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid.copy(value = None, candidates = Set(1, 2, 3, 4, 5, 6, 7, 8, 9))
-                resetCandidates(s, solvedGrid)
+                s.v(solvedGrid.position.row)(solvedGrid.position.column) = solvedGrid.copy(value = None, candidates = ALL_CANDIDATES)
+                resetCandidates(s, solvedGrid) //TODO: review what else can be done here
                 None
-              case a =>
-                a
+              case a => a
             }
           }
         }
 
       case Failure(exception) =>
-        println(exception.getMessage)
         None
     }
 
@@ -105,7 +105,6 @@ object SudokuHelper {
       }
       s
     }.toOption
-
   }
 
 

@@ -81,6 +81,7 @@ class SudokuSolverTest extends AnyFlatSpec{
     )
 
     val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku))
+    SudokuHelper.printSudoku(solvedSudoku)
     assertResult(6)(solvedSudoku.v(0)(1).value.get)
     assertResult(4)(solvedSudoku.v(0)(2).value.get)
     //    assertResult(3)(solvedSudoku(5)(5).value.get)
