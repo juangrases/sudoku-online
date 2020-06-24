@@ -2,11 +2,12 @@ package web
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ws.Message
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
+import play.api.libs.json.{JsArray, Json}
+import web.Protocol.{GridMessage, SudokuMessage}
 
 import scala.io.StdIn
 import scala.util.Failure
@@ -19,15 +20,41 @@ object WebServer {
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
 
-
     val theChat = Game.create()
 
     //For every browser websocket connection, a Flow is created
-    def websocketGameFlow(): Flow[Message, Message, Any] =
+    def websocketGameFlow(): Flow[Message, Message, Any] = {
+      println("New connection")
       //TODO: extract Json, validate sudoku is still valid, if so, continue, if not, fail
       Flow[Message]
+        .collect {
+          case TextMessage.Strict(msg) =>
+            val s = Json.parse(msg).as[JsArray]
+              .value
+              .toArray
+              .map(
+                _.as[JsArray]
+                  .value
+                  .map(gJson =>GridMessage((gJson \ "value").as[String], (gJson \ "editable").as[Boolean]))
+                  .toArray
+              )
+
+            SudokuMessage(s)
+
+//          case m@TextMessage.Streamed(msg) =>
+//            println("This is a streamed text message")
+//            m
+//          case m =>
+//            println("Not a strict message")
+//            m
+        }
         .via(theChat.gameFlow()) // ... and route them through the chatFlow ...
-          .via(reportErrorsFlow) // ... then log any processing errors on stdin
+        .collect {
+          case Protocol.SudokuMessage(sudoku) =>
+            TextMessage.Strict(Json.stringify(Json.toJson(sudoku))) // ... pack outgoing messages into WS JSON messages ...
+        }
+        .via(reportErrorsFlow) // ... then log any processing errors on stdin
+  }
 
     def reportErrorsFlow[T]: Flow[T, T, Any] =
       Flow[T]
@@ -35,6 +62,7 @@ object WebServer {
           case Failure(cause) =>
             println(s"WS stream failed with $cause")
           case _ => // ignore regular completion
+            println("connection terminated")
         })
 
     val route =

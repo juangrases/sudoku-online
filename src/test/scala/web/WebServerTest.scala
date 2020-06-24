@@ -24,7 +24,9 @@ class WebServerTest extends AnyFlatSpec{
 
 
     val fromSinkAndSource = Flow.fromSinkAndSource(Sink.foreach[Int](elem => println(s"sink 3 received: $elem")),  Source.single(10))
+    val fromSinkAndSource2 = Flow.fromSinkAndSource(Sink.foreach[Int](elem => println(s"sink 4 received: $elem")),  Source.single(40))
 
+//    fromSinkAndSource.via(fromSinkAndSource2)
 
     val perTwo = Flow[Int].map(_ * 2)
     val inverse = Flow[Int].map(_ * -1)
@@ -32,8 +34,7 @@ class WebServerTest extends AnyFlatSpec{
     val flowWithFlow = perTwo.via(inverse).via(fromSinkAndSource) //Applies the transformation on the source (4)
     val flowWithFlow2 = fromSinkAndSource.via(perTwo).via(inverse) //Applies the transformation on the  10
 
-//    source.via(flowWithFlow).runWith(Sink.foreach[Int](elem => println(s"sink two received: $elem")))
-//    source.via(flowWithFlow2).runWith(sink2)
+    Source.single(4).via(fromSinkAndSource.via(fromSinkAndSource2)).runWith(Sink.foreach[Int](elem => println(s"sink two received: $elem")))
 
 
     //Whatever is send to the sink, goes to the source

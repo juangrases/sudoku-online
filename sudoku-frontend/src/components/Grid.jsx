@@ -1,7 +1,8 @@
 import React from 'react'
 
 const Grid = ({value, onChange, rowIndex, columnIndex, editable}) => {
-	const computedValue = value === 0 ? '' : value
+
+	const computedValue = !isNaN(value) && parseInt(value) > 0 && parseInt(value) < 10 ? value : ''
 	//TODO: research BEM
 	//TODO: Logic to
 
@@ -9,7 +10,7 @@ const Grid = ({value, onChange, rowIndex, columnIndex, editable}) => {
 
 	const computeBorder = () => {
 		//Given a row and a column, know which borders need extra width
-		let styles = {borderWidth: 1, borderStyle: "double"}
+		let styles = {borderWidth: 1}
 		if(rowIndex % 3 === 0){
 			styles = {...styles, borderTopWidth: borderWidth}
 
@@ -28,7 +29,7 @@ const Grid = ({value, onChange, rowIndex, columnIndex, editable}) => {
 	}
 
 	return (
-			<input style={{width: 30, height: 30, ...computeBorder(), borderRadius: 0, padding: 0, textAlign: "center"}}
+			<input style={{width: 50, height: 50, ...computeBorder(), borderRadius: 0, padding: 0, textAlign: "center"}}
 						 type="text"
 						 disabled={!editable}
 						 value={computedValue}

@@ -1,11 +1,11 @@
 package web
 
-import akka.http.scaladsl.model.ws.Message
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
+import web.Protocol.{GameMessage, GridMessage, SudokuMessage, UpdateSudoku}
 
 trait Game {
-  def gameFlow(): Flow[Message, Message, Any]
+  def gameFlow(): Flow[GameMessage, GameMessage, Any]
 }
 
 object Game {
@@ -16,22 +16,39 @@ object Game {
     the incoming web sockets, and a Sink for all the web sockets
      */
     val (in, out) =
-      MergeHub.source[Message]
+      MergeHub.source[GameMessage]
+        .statefulMapConcat[GameMessage] { () =>
+          var lastGame = Option.empty[Array[Array[GridMessage]]]
+
+          {
+            case m@SudokuMessage(sudoku) =>
+              lastGame = Some(sudoku)
+              m :: Nil
+            case UpdateSudoku() =>
+              if (lastGame.isDefined) {
+                SudokuMessage(lastGame.get) :: Nil
+              } else {
+                Nil
+              }
+            case x => x :: Nil
+          }
+        }
         //Bring elements too all materialized sources attach, meaning every element for every chat member
-        .toMat(BroadcastHub.sink[Message])(Keep.both)
+        .toMat(BroadcastHub.sink[GameMessage])(Keep.both)
         .run()
 
-    val chatChannel: Flow[Message, Message, Any] = Flow.fromSinkAndSource(in, out)
+    val chatChannel: Flow[GameMessage, GameMessage, Any] = Flow.fromSinkAndSource(in, out)
 
-    () => Flow[Message]
-      // and enclose them in the stream with Joined and Left messages
-//      .prepend(Source.single(Protocol.Joined(sender, Nil)))
-//      .concat(Source.single(Protocol.Left(sender, Nil)))
-//      .recoverWithRetries(0, {
-//        case NonFatal(ex) => Source(
-//          Protocol.ChatMessage(sender, s"Oops, I crashed with $ex") ::
-//            Protocol.Left(sender, Nil) :: Nil)
-//      })
-      .via(chatChannel)
+    () =>
+      Flow[GameMessage]
+
+        /*
+        Goal: Prepent a message with the current state of the sudoku
+        Challenge: from where I can get the current state of sudoku
+
+        prepend a message that is received for the game flow, the game flow receives the message and send a sudoku update to everyone
+         */
+        .prepend(Source.single(UpdateSudoku()))
+        .via(chatChannel)
   }
 }
