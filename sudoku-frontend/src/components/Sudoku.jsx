@@ -2,13 +2,14 @@ import React from 'react'
 import Grid from './Grid'
 import Welcome from './Welcome'
 
-
 let socket = null
+
 class Sudoku extends React.Component {
 
 	state = {
 		name: '',
 		isNameSet: false,
+		allMembers: [],
 		sudoku: [
 			[{value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "8", editable: false}],
 			[{value: "7", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "4", editable: false}, {value: "", editable: true}, {value: "3", editable: false}, {value: "", editable: true}],
@@ -22,9 +23,7 @@ class Sudoku extends React.Component {
 	}
 
 	componentDidMount () {
-		// socket.onopen = () =>{
-		// 	socket.send(JSON.stringify(this.state.sudoku))
-		// }
+
 	}
 
 	changeValue = (rowIndex, columnIndex) => (event) => {
@@ -40,41 +39,60 @@ class Sudoku extends React.Component {
 	}
 
 	handleChange = (event) => {
-		this.setState({name: event.target.value});
+		this.setState({name: event.target.value})
 	}
 
 	handleSubmit = (event) => {
-		event.preventDefault();
-		socket = new WebSocket('ws://192.168.1.16:8080/game?name='+this.state.name)
+		event.preventDefault()
+		socket = new WebSocket('ws://192.168.1.16:8080/game?name=' + this.state.name)
 		socket.onmessage = (event) => {
 			const message = event.data
-			const sudoku = JSON.parse(message)
-			this.setState({sudoku})
+			console.log('received message ' + message)
+			const json = JSON.parse(message)
+			if (json.sudoku) {
+				const sudoku = json.sudoku
+				this.setState({sudoku})
+			}
+			if (json.allMembers) {
+				const allMembers = json.allMembers
+				this.setState({allMembers})
+			}
 		}
-		this.setState({isNameSet: true});
+		// socket.onopen = () =>{
+		// 	socket.send(JSON.stringify(this.state.sudoku))
+		// }
+		this.setState({isNameSet: true})
 	}
 
 	render () {
 		if (!this.state.isNameSet) {
 			return (
-				<Welcome name={this.state.name} handleSubmit={this.handleSubmit} handleChange={this.handleChange} />
+				<Welcome name={this.state.name} handleSubmit={this.handleSubmit} handleChange={this.handleChange}/>
 			)
 		}
 		return (
-			<div className="sudokuBoard" style={{textAlign: 'center', marginTop: 50}}>
-				{this.state.sudoku.map((row, rowIndex) =>
-					<div key={rowIndex} className="Row">
-						{row.map((r, columnIndex) =>
-							<Grid key={rowIndex * columnIndex + columnIndex}
-										value={r.value}
-										editable={r.editable}
-										rowIndex={rowIndex}
-										columnIndex={columnIndex}
-										onChange={this.changeValue(rowIndex, columnIndex)}
-							/>
-						)}
-					</div>
-				)}
+			<div>
+				<div className="sudokuBoard" style={{textAlign: 'center', marginTop: 50}}>
+					{this.state.sudoku.map((row, rowIndex) =>
+						<div key={rowIndex} className="Row">
+							{row.map((r, columnIndex) =>
+								<Grid key={rowIndex * columnIndex + columnIndex}
+											value={r.value}
+											editable={r.editable}
+											rowIndex={rowIndex}
+											columnIndex={columnIndex}
+											onChange={this.changeValue(rowIndex, columnIndex)}
+								/>
+							)}
+						</div>
+					)}
+				</div>
+				<div>
+					<h2>Current members:</h2>
+					<ul>
+						{this.state.allMembers.map(name => <li>{name}</li>)}
+					</ul>
+				</div>
 			</div>
 		)
 	}

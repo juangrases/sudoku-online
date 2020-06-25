@@ -24,37 +24,32 @@ object WebServer {
 
     //For every browser websocket connection, a Flow is created
     def websocketGameFlow(name: String): Flow[Message, Message, Any] = {
-      println("New connection from "+name)
+      println("New connection from " + name)
       //TODO: extract Json, validate sudoku is still valid, if so, continue, if not, fail
       Flow[Message]
         .collect {
           case TextMessage.Strict(msg) =>
-            val s = Json.parse(msg).as[JsArray]
-              .value
-              .toArray
-              .map(
-                _.as[JsArray]
-                  .value
-                  .map(gJson =>GridMessage((gJson \ "value").as[String], (gJson \ "editable").as[Boolean]))
-                  .toArray
-              )
-
-            SudokuMessage(s)
-
-//          case m@TextMessage.Streamed(msg) =>
-//            println("This is a streamed text message")
-//            m
-//          case m =>
-//            println("Not a strict message")
-//            m
+            SudokuMessage(
+              Json.parse(msg).as[JsArray]
+                .value
+                .toArray
+                .map(
+                  _.as[JsArray]
+                    .value
+                    .map(gJson => GridMessage((gJson \ "value").as[String], (gJson \ "editable").as[Boolean]))
+                    .toArray
+                )
+            )
         }
-        .via(theChat.gameFlow()) // ... and route them through the chatFlow ...
+        .via(theChat.gameFlow(name)) // ... and route them through the chatFlow ...
         .collect {
-          case Protocol.SudokuMessage(sudoku) =>
-            TextMessage.Strict(Json.stringify(Json.toJson(sudoku))) // ... pack outgoing messages into WS JSON messages ...
+          case m: Protocol.SudokuMessage =>
+            TextMessage.Strict(Json.stringify(Json.toJson(m))) // ... pack outgoing messages into WS JSON messages ...
+          case m: Protocol.Joined =>
+            TextMessage.Strict(Json.stringify(Json.toJson(m)))
         }
         .via(reportErrorsFlow) // ... then log any processing errors on stdin
-  }
+    }
 
     def reportErrorsFlow[T]: Flow[T, T, Any] =
       Flow[T]

@@ -3,12 +3,12 @@ package web
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import sudoku.SudokuHelper
-import web.Protocol.{GameMessage, GridMessage, SudokuMessage, UpdateSudoku, WrongMove}
+import web.Protocol.{GameMessage, GridMessage, Joined, SudokuMessage, UpdateSudoku, WrongMove}
 
 import scala.util.Try
 
 trait Game {
-  def gameFlow(): Flow[GameMessage, GameMessage, Any]
+  def gameFlow(user: String): Flow[GameMessage, GameMessage, Any]
 }
 
 object Game {
@@ -31,6 +31,7 @@ object Game {
               if (lastGame.isDefined) {
                 SudokuMessage(lastGame.get) :: Nil
               } else {
+                //Avoid new players overwriting sudoku
                 Nil
               }
             case WrongMove() =>
@@ -42,13 +43,23 @@ object Game {
             case x => x :: Nil
           }
         }
+        .statefulMapConcat[GameMessage] { () =>
+          var members = Set.empty[String]
+
+          {
+            case Protocol.Joined(newMember, _) =>
+              members += newMember
+              Protocol.Joined(newMember, members.toSeq) :: Nil
+            case x => x :: Nil
+          }
+        }
         //Bring elements too all materialized sources attach, meaning every element for every chat member
         .toMat(BroadcastHub.sink[GameMessage])(Keep.both)
         .run()
 
     val chatChannel: Flow[GameMessage, GameMessage, Any] = Flow.fromSinkAndSource(in, out)
 
-    () =>
+    (user: String) =>
       Flow[GameMessage]
 
         /*
@@ -70,6 +81,7 @@ object Game {
           case m => m
         }
         .prepend(Source.single(UpdateSudoku()))
+        .prepend(Source.single(Joined(user, Nil)))
         .via(chatChannel)
   }
 }
