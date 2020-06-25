@@ -33,18 +33,22 @@ object SudokuHelper {
     ???
   }
 
-  def solveSudoku(s: SudokuWithCandidates): SudokuWithCandidates = {
-    val tableWithCandidates = computeAllCandidates(s)
-    val value = solveSudokuI(tableWithCandidates, None)
-    value.get
+  def solveSudoku(s: SudokuWithCandidates): Option[SudokuWithCandidates] = {
+    //TODO: validate that current sudoku is valid
+    Try(solveSudokuI(computeAllCandidates(s), None)).toOption.flatten
   }
+
 
   //Note: No need to have an Array for this step
   private def computeAllCandidates(s: SudokuWithCandidates): SudokuWithCandidates = {
     s.copy(v = s.v.map { row =>
       row.map { case grid@SGrid(value, _, position) =>
         if (value.isDefined) {
-          grid
+          if(computeCandidates(grid, s).contains(grid.value.get)){
+            grid
+          }else{
+            throw new IllegalStateException("Current sudoku is wrong")
+          }
         } else {
           val newCandidates = computeCandidates(grid, s)
           SGrid(value, newCandidates, position)
@@ -161,18 +165,26 @@ object SudokuHelper {
   private def reduceCandidatesFromRow(grid: SGrid, s: SudokuWithCandidates): SGrid = {
     s.v(grid.position.row).filter(_.value.isDefined).foldLeft(grid) {
       case (finalResult, theRow) =>
-        finalResult.copy(candidates = finalResult.candidates - theRow.value.get)
+        if(theRow.position == grid.position){
+          finalResult
+        } else{
+          finalResult.copy(candidates = finalResult.candidates - theRow.value.get)
+        }
     }
   }
 
   private def reduceCandidatesFromColumn(grid: SGrid, s: SudokuWithCandidates): SGrid = {
     val column = grid.position.column
-    val columnList = s.v.foldLeft(Seq[Option[Int]]()) {
-      case (result, row) => result :+ row(column).value
+    val columnList = s.v.foldLeft(Seq[SGrid]()) {
+      case (result, row) => result :+ row(column)
     }
-    columnList.filter(_.isDefined).foldLeft(grid) {
+    columnList.filter(_.value.isDefined).foldLeft(grid) {
       case (finalResult, theRow) =>
-        finalResult.copy(candidates = finalResult.candidates - theRow.get)
+        if(grid.position == theRow.position){
+          finalResult
+        }else{
+          finalResult.copy(candidates = finalResult.candidates - theRow.value.get)
+        }
     }
   }
 
@@ -196,7 +208,11 @@ object SudokuHelper {
       .filter(_.value.isDefined)
       .foldLeft(grid) {
         case (finalResult, theGrid) =>
-          finalResult.copy(candidates = finalResult.candidates - theGrid.value.get)
+          if(theGrid.position == grid.position){
+            finalResult
+          }else{
+            finalResult.copy(candidates = finalResult.candidates - theGrid.value.get)
+          }
       }
   }
 }

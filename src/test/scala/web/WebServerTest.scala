@@ -1,12 +1,11 @@
 package web
 
-import org.scalatest.flatspec.AnyFlatSpec
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Framing, Keep, Sink, Source}
-import akka.util.ByteString
+import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
+import org.scalatest.flatspec.AnyFlatSpec
 
-import scala.io.StdIn
+import scala.concurrent.Future
 
 
 
@@ -18,32 +17,15 @@ class WebServerTest extends AnyFlatSpec{
     implicit val system = ActorSystem("my-system")
     implicit val materializer = ActorMaterializer()
 
-    val source = Source.single(4)
 
-    val sink = Sink.foreach[Int](elem => println(s"sink received: $elem"))
+    val source = Source(1 to 10)
+    val sink = Sink.fold[Int, Int](0)(_ + _)
 
+    // connect the Source to the Sink, obtaining a RunnableGraph
+    val runnable = source.toMat(sink)(Keep.both)
 
-    val fromSinkAndSource = Flow.fromSinkAndSource(Sink.foreach[Int](elem => println(s"sink 3 received: $elem")),  Source.single(10))
-    val fromSinkAndSource2 = Flow.fromSinkAndSource(Sink.foreach[Int](elem => println(s"sink 4 received: $elem")),  Source.single(40))
-
-//    fromSinkAndSource.via(fromSinkAndSource2)
-
-    val perTwo = Flow[Int].map(_ * 2)
-    val inverse = Flow[Int].map(_ * -1)
-
-    val flowWithFlow = perTwo.via(inverse).via(fromSinkAndSource) //Applies the transformation on the source (4)
-    val flowWithFlow2 = fromSinkAndSource.via(perTwo).via(inverse) //Applies the transformation on the  10
-
-    Source.single(4).via(fromSinkAndSource.via(fromSinkAndSource2)).runWith(Sink.foreach[Int](elem => println(s"sink two received: $elem")))
-
-
-    //Whatever is send to the sink, goes to the source
-
-
-//    val x = fromSinkAndSource.runWith(Source.single("3"), sink2)
-
-
-//    source.to(sink).run
+    // materialize the flow and get the value of the FoldSink
+//    val sum: Future[Int] = runnable.run()
 
   }
 }

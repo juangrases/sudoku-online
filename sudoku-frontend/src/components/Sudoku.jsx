@@ -2,7 +2,6 @@ import React from 'react'
 import Grid from './Grid'
 
 const socket = new WebSocket('ws://192.168.1.16:8080/game')
-console.log('When this renders')
 
 class Sudoku extends React.Component {
 
@@ -22,24 +21,26 @@ class Sudoku extends React.Component {
 	 */
 	state = {
 		sudoku: [
-			[{value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "8", editable: false}],
-			[{value: "7", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "4", editable: false}, {value: "0", editable: true}, {value: "3", editable: false}, {value: "0", editable: true}],
-			[{value: "0", editable: true}, {value: "4", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "3", editable: false}, {value: "2", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}],
-			[{value: "2", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "3", editable: false}, {value: "9", editable: false}, {value: "0", editable: true}, {value: "8", editable: false}, {value: "0", editable: true}, {value: "4", editable: false}],
-			[{value: "0", editable: true}, {value: "0", editable: true}, {value: "7", editable: false}, {value: "8", editable: false}, {value: "2", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "6", editable: false}, {value: "3", editable: false}],
-			[{value: "0", editable: true}, {value: "5", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "7", editable: false}, {value: "6", editable: false}, {value: "0", editable: true}, {value: "9", editable: false}, {value: "2", editable: false}],
-			[{value: "0", editable: true}, {value: "7", editable: false}, {value: "4", editable: false}, {value: "2", editable: false}, {value: "6", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}],
-			[{value: "0", editable: true}, {value: "3", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "6", editable: false}, {value: "8", editable: false}, {value: "0", editable: true}],
-			[{value: "5", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "9", editable: false}, {value: "0", editable: true}, {value: "0", editable: true}, {value: "7", editable: false}]]
+			[{value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "8", editable: false}],
+			[{value: "7", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "4", editable: false}, {value: "", editable: true}, {value: "3", editable: false}, {value: "", editable: true}],
+			[{value: "", editable: true}, {value: "4", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "3", editable: false}, {value: "2", editable: false}, {value: "", editable: true}, {value: "", editable: true}],
+			[{value: "2", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "3", editable: false}, {value: "9", editable: false}, {value: "", editable: true}, {value: "8", editable: false}, {value: "", editable: true}, {value: "4", editable: false}],
+			[{value: "", editable: true}, {value: "", editable: true}, {value: "7", editable: false}, {value: "8", editable: false}, {value: "2", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "6", editable: false}, {value: "3", editable: false}],
+			[{value: "", editable: true}, {value: "5", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "7", editable: false}, {value: "6", editable: false}, {value: "", editable: true}, {value: "9", editable: false}, {value: "2", editable: false}],
+			[{value: "", editable: true}, {value: "7", editable: false}, {value: "4", editable: false}, {value: "2", editable: false}, {value: "6", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}],
+			[{value: "", editable: true}, {value: "3", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "6", editable: false}, {value: "8", editable: false}, {value: "", editable: true}],
+			[{value: "5", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "9", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "7", editable: false}]]
 	}
 
 	componentDidMount () {
-		console.log('when componentDidMount renders')
 		socket.onmessage = (event) => {
 			const message = event.data
 			const sudoku = JSON.parse(message)
 			this.setState({sudoku})
 		}
+		// socket.onopen = () =>{
+		// 	socket.send(JSON.stringify(this.state.sudoku))
+		// }
 	}
 
 	changeValue = (rowIndex, columnIndex) => (event) => {

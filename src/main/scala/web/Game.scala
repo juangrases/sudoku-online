@@ -2,7 +2,10 @@ package web
 
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import web.Protocol.{GameMessage, GridMessage, SudokuMessage, UpdateSudoku}
+import sudoku.SudokuHelper
+import web.Protocol.{GameMessage, GridMessage, SudokuMessage, UpdateSudoku, WrongMove}
+
+import scala.util.Try
 
 trait Game {
   def gameFlow(): Flow[GameMessage, GameMessage, Any]
@@ -30,6 +33,12 @@ object Game {
               } else {
                 Nil
               }
+            case WrongMove() =>
+              if (lastGame.isDefined) {
+                SudokuMessage(lastGame.get) :: Nil
+              } else {
+                Nil
+              }
             case x => x :: Nil
           }
         }
@@ -48,6 +57,18 @@ object Game {
 
         prepend a message that is received for the game flow, the game flow receives the message and send a sudoku update to everyone
          */
+        //Check if new sudoku is valid
+        .map {
+          case m@SudokuMessage(sudoku) =>
+            val candidates = SudokuHelper.toSudokuWithCandidates(sudoku.map(_.map(v => if (v.value == "") None else Try(v.value.toInt).toOption)))
+            SudokuHelper.solveSudoku(candidates) match {
+              case None =>
+                WrongMove()
+              case Some(s) =>
+                m
+            }
+          case m => m
+        }
         .prepend(Source.single(UpdateSudoku()))
         .via(chatChannel)
   }

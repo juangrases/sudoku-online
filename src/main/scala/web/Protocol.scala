@@ -7,6 +7,7 @@ object Protocol {
   case class GridMessage(value: String, editable: Boolean)
   case class SudokuMessage(sudoku: Array[Array[GridMessage]]) extends GameMessage
   case class UpdateSudoku() extends GameMessage
+  case class WrongMove() extends GameMessage
 
 
   implicit val gridMessageFormat = Json.format[GridMessage]

@@ -39,7 +39,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(7),Some(6),Some(3),Some(4),Some(1),Some(8),Some(2),Some(5),Some(9))
     )
 
-    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku))
+    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku)).get
 
     assertResult(4)(solvedSudoku.v(0)(0).value.get)
     assertResult(3)(solvedSudoku.v(5)(5).value.get)
@@ -59,7 +59,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(5), None, Some(6), None, None, Some(9), None, None, Some(7))
     )
 
-    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku))
+    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku)).get
     SudokuHelper.printSudoku(solvedSudoku)
     assertResult(6)(solvedSudoku.v(0)(0).value.get)
 //    assertResult(3)(solvedSudoku(5)(5).value.get)
@@ -80,7 +80,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(9), Some(1), None, None, None, None, None, None, Some(3))
     )
 
-    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku))
+    val solvedSudoku = SudokuHelper.solveSudoku(SudokuHelper.toSudokuWithCandidates(sudoku)).get
     SudokuHelper.printSudoku(solvedSudoku)
     assertResult(6)(solvedSudoku.v(0)(1).value.get)
     assertResult(4)(solvedSudoku.v(0)(2).value.get)
