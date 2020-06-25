@@ -10,16 +10,6 @@ class Sudoku extends React.Component {
 		name: '',
 		isNameSet: false,
 		allMembers: [],
-		sudoku: [
-			[{value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "8", editable: false}],
-			[{value: "7", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "4", editable: false}, {value: "", editable: true}, {value: "3", editable: false}, {value: "", editable: true}],
-			[{value: "", editable: true}, {value: "4", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "3", editable: false}, {value: "2", editable: false}, {value: "", editable: true}, {value: "", editable: true}],
-			[{value: "2", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "3", editable: false}, {value: "9", editable: false}, {value: "", editable: true}, {value: "8", editable: false}, {value: "", editable: true}, {value: "4", editable: false}],
-			[{value: "", editable: true}, {value: "", editable: true}, {value: "7", editable: false}, {value: "8", editable: false}, {value: "2", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "6", editable: false}, {value: "3", editable: false}],
-			[{value: "", editable: true}, {value: "5", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "7", editable: false}, {value: "6", editable: false}, {value: "", editable: true}, {value: "9", editable: false}, {value: "2", editable: false}],
-			[{value: "", editable: true}, {value: "7", editable: false}, {value: "4", editable: false}, {value: "2", editable: false}, {value: "6", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}],
-			[{value: "", editable: true}, {value: "3", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "6", editable: false}, {value: "8", editable: false}, {value: "", editable: true}],
-			[{value: "5", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "", editable: true}, {value: "9", editable: false}, {value: "", editable: true}, {value: "", editable: true}, {value: "7", editable: false}]]
 	}
 
 	componentDidMount () {
@@ -47,7 +37,6 @@ class Sudoku extends React.Component {
 		socket = new WebSocket('ws://192.168.1.16:8080/game?name=' + this.state.name)
 		socket.onmessage = (event) => {
 			const message = event.data
-			console.log('received message ' + message)
 			const json = JSON.parse(message)
 			if (json.sudoku) {
 				const sudoku = json.sudoku
@@ -70,6 +59,9 @@ class Sudoku extends React.Component {
 				<Welcome name={this.state.name} handleSubmit={this.handleSubmit} handleChange={this.handleChange}/>
 			)
 		}
+		if(!this.state.sudoku){
+			return null
+		}
 		return (
 			<div>
 				<div className="sudokuBoard" style={{textAlign: 'center', marginTop: 50}}>
@@ -90,7 +82,7 @@ class Sudoku extends React.Component {
 				<div>
 					<h2>Current members:</h2>
 					<ul>
-						{this.state.allMembers.map(name => <li>{name}</li>)}
+						{this.state.allMembers.map(name => <li key={name}>{name}</li>)}
 					</ul>
 				</div>
 			</div>

@@ -25,7 +25,9 @@ object WebServer {
     //For every browser websocket connection, a Flow is created
     def websocketGameFlow(name: String): Flow[Message, Message, Any] = {
       println("New connection from " + name)
-      //TODO: extract Json, validate sudoku is still valid, if so, continue, if not, fail
+      /*
+      When first person joins
+       */
       Flow[Message]
         .collect {
           case TextMessage.Strict(msg) =>

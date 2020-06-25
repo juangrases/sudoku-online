@@ -3,7 +3,7 @@ package web
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import sudoku.SudokuHelper
-import web.Protocol.{GameMessage, GridMessage, Joined, SudokuMessage, UpdateSudoku, WrongMove}
+import web.Protocol.{GameMessage, GridMessage, Joined, SudokuMessage, PollSudoku, WrongMove}
 
 import scala.util.Try
 
@@ -21,25 +21,27 @@ object Game {
     val (in, out) =
       MergeHub.source[GameMessage]
         .statefulMapConcat[GameMessage] { () =>
-          var lastGame = Option.empty[Array[Array[GridMessage]]]
+          var lastGame = Array(
+            Array(GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("8", false)),
+            Array(GridMessage("7", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("4", false), GridMessage("", true), GridMessage("3", false), GridMessage("", true)),
+            Array(GridMessage("", true), GridMessage("4", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("3", false), GridMessage("2", false), GridMessage("", true), GridMessage("", true)),
+            Array(GridMessage("2", false), GridMessage("", true), GridMessage("", true), GridMessage("3", false), GridMessage("9", false), GridMessage("", true), GridMessage("8", false), GridMessage("", true), GridMessage("4", false)),
+            Array(GridMessage("", true), GridMessage("", true), GridMessage("7", false), GridMessage("8", false), GridMessage("2", false), GridMessage("", true), GridMessage("", true), GridMessage("6", false), GridMessage("3", false)),
+            Array(GridMessage("", true), GridMessage("5", false), GridMessage("", true), GridMessage("", true), GridMessage("7", false), GridMessage("6", false), GridMessage("", true), GridMessage("9", false), GridMessage("2", false)),
+            Array(GridMessage("", true), GridMessage("7", false), GridMessage("4", false), GridMessage("2", false), GridMessage("6", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true)),
+            Array(GridMessage("", true), GridMessage("3", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("6", false), GridMessage("8", false), GridMessage("", true)),
+            Array(GridMessage("5", false), GridMessage("", true), GridMessage("6", false), GridMessage("", true), GridMessage("", true), GridMessage("9", false), GridMessage("", true), GridMessage("", true), GridMessage("7", false))
+          )
 
           {
             case m@SudokuMessage(sudoku) =>
-              lastGame = Some(sudoku)
+              lastGame = sudoku
               m :: Nil
-            case UpdateSudoku() =>
-              if (lastGame.isDefined) {
-                SudokuMessage(lastGame.get) :: Nil
-              } else {
-                //Avoid new players overwriting sudoku
-                Nil
-              }
+            case PollSudoku() => SudokuMessage(lastGame) :: Nil
+
             case WrongMove() =>
-              if (lastGame.isDefined) {
-                SudokuMessage(lastGame.get) :: Nil
-              } else {
-                Nil
-              }
+              SudokuMessage(lastGame) :: Nil
+
             case x => x :: Nil
           }
         }
@@ -80,7 +82,8 @@ object Game {
             }
           case m => m
         }
-        .prepend(Source.single(UpdateSudoku()))
+        //Allow new players that just joined to get latest Sudoku
+        .prepend(Source.single(PollSudoku()))
         .prepend(Source.single(Joined(user, Nil)))
         .via(chatChannel)
   }
