@@ -47,9 +47,6 @@ class Sudoku extends React.Component {
 				this.setState({allMembers})
 			}
 		}
-		// socket.onopen = () =>{
-		// 	socket.send(JSON.stringify(this.state.sudoku))
-		// }
 		this.setState({isNameSet: true})
 	}
 

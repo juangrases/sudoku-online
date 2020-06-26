@@ -34,7 +34,6 @@ object SudokuHelper {
   }
 
   def solveSudoku(s: SudokuWithCandidates): Option[SudokuWithCandidates] = {
-    //TODO: validate that current sudoku is valid
     Try(solveSudokuI(computeAllCandidates(s), None)).toOption.flatten
   }
 
@@ -44,9 +43,9 @@ object SudokuHelper {
     s.copy(v = s.v.map { row =>
       row.map { case grid@SGrid(value, _, position) =>
         if (value.isDefined) {
-          if(computeCandidates(grid, s).contains(grid.value.get)){
+          if (computeCandidates(grid, s).contains(grid.value.get)) {
             grid
-          }else{
+          } else {
             throw new IllegalStateException("Current sudoku is wrong")
           }
         } else {
@@ -58,7 +57,7 @@ object SudokuHelper {
   }
 
   private def solveSudokuI(s: SudokuWithCandidates, lastSolved: Option[SGrid]): Option[SudokuWithCandidates] = {
-//    printSudoku(s)
+    //    printSudoku(s)
     if (s.v.flatten.forall(_.value.isDefined)) return Some(s)
 
     val updatedSudokuOpt = lastSolved.map(ls => updateCandidatesFromLastSolved(s, ls)).getOrElse(Success(s))
@@ -165,9 +164,9 @@ object SudokuHelper {
   private def reduceCandidatesFromRow(grid: SGrid, s: SudokuWithCandidates): SGrid = {
     s.v(grid.position.row).filter(_.value.isDefined).foldLeft(grid) {
       case (finalResult, theRow) =>
-        if(theRow.position == grid.position){
+        if (theRow.position == grid.position) {
           finalResult
-        } else{
+        } else {
           finalResult.copy(candidates = finalResult.candidates - theRow.value.get)
         }
     }
@@ -180,9 +179,9 @@ object SudokuHelper {
     }
     columnList.filter(_.value.isDefined).foldLeft(grid) {
       case (finalResult, theRow) =>
-        if(grid.position == theRow.position){
+        if (grid.position == theRow.position) {
           finalResult
-        }else{
+        } else {
           finalResult.copy(candidates = finalResult.candidates - theRow.value.get)
         }
     }
@@ -208,9 +207,9 @@ object SudokuHelper {
       .filter(_.value.isDefined)
       .foldLeft(grid) {
         case (finalResult, theGrid) =>
-          if(theGrid.position == grid.position){
+          if (theGrid.position == grid.position) {
             finalResult
-          }else{
+          } else {
             finalResult.copy(candidates = finalResult.candidates - theGrid.value.get)
           }
       }

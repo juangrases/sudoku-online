@@ -3,7 +3,7 @@ package web
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import sudoku.SudokuHelper
-import web.Protocol.{GameMessage, GridMessage, Joined, SudokuMessage, PollSudoku, WrongMove}
+import web.Protocol.{GameMessage, GridMessage, MemberJoined, MemberLeft, PollSudoku, SudokuMessage, WrongMove}
 
 import scala.util.Try
 
@@ -12,6 +12,7 @@ trait Game {
 }
 
 object Game {
+
 
   def create()(implicit system: ActorMaterializer): Game = {
     /*
@@ -49,9 +50,12 @@ object Game {
           var members = Set.empty[String]
 
           {
-            case Protocol.Joined(newMember, _) =>
+            case Protocol.MemberJoined(newMember) =>
               members += newMember
-              Protocol.Joined(newMember, members.toSeq) :: Nil
+              Protocol.Members(members.toSeq) :: Nil
+            case Protocol.MemberLeft(member) =>
+              members -= member
+              Protocol.Members(members.toSeq) :: Nil
             case x => x :: Nil
           }
         }
@@ -84,7 +88,8 @@ object Game {
         }
         //Allow new players that just joined to get latest Sudoku
         .prepend(Source.single(PollSudoku()))
-        .prepend(Source.single(Joined(user, Nil)))
+        .prepend(Source.single(MemberJoined(user)))
+        .concat(Source.single(MemberLeft(user)))
         .via(chatChannel)
   }
 }

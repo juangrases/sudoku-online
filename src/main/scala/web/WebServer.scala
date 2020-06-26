@@ -47,7 +47,7 @@ object WebServer {
         .collect {
           case m: Protocol.SudokuMessage =>
             TextMessage.Strict(Json.stringify(Json.toJson(m))) // ... pack outgoing messages into WS JSON messages ...
-          case m: Protocol.Joined =>
+          case m: Protocol.Members =>
             TextMessage.Strict(Json.stringify(Json.toJson(m)))
         }
         .via(reportErrorsFlow) // ... then log any processing errors on stdin
