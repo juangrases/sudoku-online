@@ -4,13 +4,17 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import play.api.libs.json.{JsArray, Json}
 import web.Protocol.{GridMessage, SudokuMessage}
+import scala.concurrent.duration._
 
 import scala.io.StdIn
 import scala.util.Failure
+
+import scala.language.postfixOps
 
 object WebServer {
   def main(args: Array[String]) {
@@ -19,7 +23,9 @@ object WebServer {
     implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
-
+    val defaultSettings = ServerSettings(system)
+    val websocketSettings = defaultSettings.websocketSettings.withPeriodicKeepAliveMaxIdle(10 second)
+    val customSettings = defaultSettings.withWebsocketSettings(websocketSettings)
     val theChat = Game.create()
 
     //For every browser websocket connection, a Flow is created
@@ -76,7 +82,7 @@ object WebServer {
         }
       )
 
-    val bindingFuture = Http().bindAndHandle(route, "192.168.1.16", 8080)
+    val bindingFuture = Http().bindAndHandle(route, "192.168.1.16", 8080, settings = customSettings)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine() // let it run until user presses return
