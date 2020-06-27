@@ -6,7 +6,7 @@ const Grid = ({value, onChange, rowIndex, columnIndex, editable}) => {
 	//TODO: research BEM
 	//TODO: Logic to
 
-	const borderWidth = 2
+	const borderWidth = 3
 
 	const computeBorder = () => {
 		//Given a row and a column, know which borders need extra width
@@ -29,7 +29,8 @@ const Grid = ({value, onChange, rowIndex, columnIndex, editable}) => {
 	}
 
 	return (
-			<input style={{...computeBorder(), width: 60, height: 60, borderRadius: 0, padding: 0, textAlign: "center", fontSize: 30}}
+			<input className="grid"
+						 style={{...computeBorder(), width: 60, height: 60, borderRadius: 0, padding: 0, textAlign: "center", fontSize: 30}}
 						 type="text"
 						 disabled={!editable}
 						 value={computedValue}

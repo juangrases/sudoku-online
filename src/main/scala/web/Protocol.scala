@@ -5,8 +5,8 @@ import play.api.libs.json.Json
 object Protocol {
   sealed trait GameMessage
   case class GridMessage(value: String, editable: Boolean)
-  case class SudokuMessage(sudoku: Array[Array[GridMessage]], member: Option[String], scores: Option[Map[String, Score]]) extends GameMessage
-  case class PollSudoku() extends GameMessage
+  case class SudokuMessage(sudoku: Array[Array[GridMessage]], member: String, scores: Option[Map[String, Score]]) extends GameMessage
+  case class PollSudoku(member: String) extends GameMessage
   case class WrongMove(member: String) extends GameMessage
   case class MemberJoined(member: String) extends GameMessage
   case class Members(allMembers: Seq[String]) extends GameMessage

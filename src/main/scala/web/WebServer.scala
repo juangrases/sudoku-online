@@ -2,29 +2,29 @@ package web
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.scaladsl.{Flow, Sink}
 import play.api.libs.json.{JsArray, Json}
-import web.Protocol.{GridMessage, SudokuMessage}
-import scala.concurrent.duration._
+import web.Protocol.{GridMessage, MemberJoined, SudokuMessage}
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.util.Failure
-
 import scala.language.postfixOps
 
 object WebServer {
   def main(args: Array[String]) {
 
     implicit val system = ActorSystem("my-system")
-    implicit val materializer = ActorMaterializer()
+    implicit val materializer = Materializer(system)
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
     val defaultSettings = ServerSettings(system)
-    val websocketSettings = defaultSettings.websocketSettings.withPeriodicKeepAliveMaxIdle(10 second)
+    val websocketSettings = defaultSettings.websocketSettings.withPeriodicKeepAliveMaxIdle(1 second)
     val customSettings = defaultSettings.withWebsocketSettings(websocketSettings)
     val theChat = Game.create()
 
@@ -35,6 +35,11 @@ object WebServer {
       When first person joins
        */
       Flow[Message]
+        .mapAsync(1){
+          case e: TextMessage =>
+            e.toStrict(2 seconds)
+          case e => Future.successful(e)
+        }
         .collect {
           case TextMessage.Strict(msg) =>
             SudokuMessage(
@@ -47,7 +52,7 @@ object WebServer {
                     .map(gJson => GridMessage((gJson \ "value").as[String], (gJson \ "editable").as[Boolean]))
                     .toArray
                 ),
-              None,
+              name,
               None
             )
         }
@@ -77,11 +82,15 @@ object WebServer {
             getFromFile(s"src/main/public$remaining")
           }
         },
+        extractUnmatchedPath{ remaining =>
+          getFromFile(s"sudoku-frontend/build"+remaining)
+        },
         path("game") {
           parameter("name") { name =>
             handleWebSocketMessages(websocketGameFlow(name))
           }
-        }
+        },
+        getFromFile(s"sudoku-frontend/build/index.html")
       )
 
     val bindingFuture = Http().bindAndHandle(route, "192.168.1.16", 8080, settings = customSettings)

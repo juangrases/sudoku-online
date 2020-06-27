@@ -1,6 +1,6 @@
 package web
 
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl._
 import sudoku.{SudokuHelper, Sudokus}
 import web.Protocol.{GameMessage, GridMessage, MemberJoined, MemberLeft, PollSudoku, Score, SudokuMessage, WrongMove}
@@ -13,7 +13,7 @@ trait Game {
 
 object Game {
 
-  def create()(implicit system: ActorMaterializer): Game = {
+  def create()(implicit system: Materializer): Game = {
     /*
     This pattern allows to have a broadcast every message to everyone approach by configuring a Source from all
     the incoming web sockets, and a Sink for all the web sockets
@@ -27,21 +27,26 @@ object Game {
           var scores = Map[String, Score]()
 
           {
-            case m@SudokuMessage(sudoku, Some(member), _) =>
+            case m@SudokuMessage(sudoku, member, _) =>
+              val updateScore = lastGame.flatten.count(_.value != "") < sudoku.flatten.count(_.value != "")
+
+
               lastGame = sudoku
               val previousScore = scores.get(member)
-              scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
+              if(updateScore){
+                scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
+              }
               m.copy(scores = Some(scores)) :: Nil
-            case m@SudokuMessage(sudoku, None, _) =>
-              lastGame = sudoku
-              m.copy(scores = Some(scores)) :: Nil
-            case PollSudoku() =>
-              SudokuMessage(lastGame, None, Some(scores)) :: Nil
+//            case m@SudokuMessage(sudoku, None, _) =>
+//              lastGame = sudoku
+//              m.copy(scores = Some(scores)) :: Nil
+            case PollSudoku(member) =>
+              SudokuMessage(lastGame, member, Some(scores)) :: Nil
 
             case WrongMove(member) =>
               val previousScore = scores.get(member)
               scores = scores + (member -> previousScore.map(p => p.copy(wrongs = p.wrongs + 1)).getOrElse(Score(1, 0)))
-              SudokuMessage(lastGame, Some(member), Some(scores)) :: Nil
+              SudokuMessage(lastGame, member, Some(scores)) :: Nil
 
             case x => x :: Nil
           }
@@ -74,12 +79,12 @@ object Game {
               case None =>
                 WrongMove(member)
               case Some(_) =>
-                m.copy(member=Some(member))
+                m
             }
           case m => m
         }
         //Allow new players that just joined to get latest Sudoku
-        .prepend(Source.single(PollSudoku()))
+        .prepend(Source.single(PollSudoku(member)))
         .prepend(Source.single(MemberJoined(member)))
         .concat(Source.single(MemberLeft(member)))
         .via(chatChannel)

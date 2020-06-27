@@ -1,12 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import Sudoku from './components/Sudoku';
+import App from './App';
 import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render(
   <React.StrictMode>
-    <Sudoku />
+    <App />
   </React.StrictMode>,
   document.getElementById('root')
 );
