@@ -40,7 +40,8 @@ class Sudoku extends React.Component {
 			const json = JSON.parse(message)
 			if (json.sudoku) {
 				const sudoku = json.sudoku
-				this.setState({sudoku})
+				const scores = json.scores
+				this.setState({sudoku, scores})
 			}
 			if (json.allMembers) {
 				const allMembers = json.allMembers
@@ -79,7 +80,11 @@ class Sudoku extends React.Component {
 				<div>
 					<h2>Current members:</h2>
 					<ul>
-						{this.state.allMembers.map(name => <li key={name}>{name}</li>)}
+						{this.state.allMembers.map(name => {
+							const score = this.state.scores[name]
+							const computedScore = score? score: {}
+							return (<li key={name}>{name} - {computedScore.successes}/{computedScore.wrongs}</li>)
+						})}
 					</ul>
 				</div>
 			</div>

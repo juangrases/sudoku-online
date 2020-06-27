@@ -29,7 +29,7 @@ const Grid = ({value, onChange, rowIndex, columnIndex, editable}) => {
 	}
 
 	return (
-			<input style={{...computeBorder(), width: 60, height: 60, borderRadius: 0, padding: 0, textAlign: "center", fontSize: 20}}
+			<input style={{...computeBorder(), width: 60, height: 60, borderRadius: 0, padding: 0, textAlign: "center", fontSize: 30}}
 						 type="text"
 						 disabled={!editable}
 						 value={computedValue}

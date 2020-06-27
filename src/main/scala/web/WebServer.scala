@@ -46,7 +46,9 @@ object WebServer {
                     .value
                     .map(gJson => GridMessage((gJson \ "value").as[String], (gJson \ "editable").as[Boolean]))
                     .toArray
-                )
+                ),
+              None,
+              None
             )
         }
         .via(theChat.gameFlow(name)) // ... and route them through the chatFlow ...
