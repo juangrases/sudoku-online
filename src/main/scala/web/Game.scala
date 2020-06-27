@@ -2,28 +2,16 @@ package web
 
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import sudoku.SudokuHelper
+import sudoku.{SudokuHelper, Sudokus}
 import web.Protocol.{GameMessage, GridMessage, MemberJoined, MemberLeft, PollSudoku, Score, SudokuMessage, WrongMove}
 
-import scala.util.Try
+import scala.util.{Random, Try}
 
 trait Game {
   def gameFlow(user: String): Flow[GameMessage, GameMessage, Any]
 }
 
 object Game {
-
-  val theGame = Array(
-    Array(GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("8", false)),
-    Array(GridMessage("7", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("4", false), GridMessage("", true), GridMessage("3", false), GridMessage("", true)),
-    Array(GridMessage("", true), GridMessage("4", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("3", false), GridMessage("2", false), GridMessage("", true), GridMessage("", true)),
-    Array(GridMessage("2", false), GridMessage("", true), GridMessage("", true), GridMessage("3", false), GridMessage("9", false), GridMessage("", true), GridMessage("8", false), GridMessage("", true), GridMessage("4", false)),
-    Array(GridMessage("", true), GridMessage("", true), GridMessage("7", false), GridMessage("8", false), GridMessage("2", false), GridMessage("", true), GridMessage("", true), GridMessage("6", false), GridMessage("3", false)),
-    Array(GridMessage("", true), GridMessage("5", false), GridMessage("", true), GridMessage("", true), GridMessage("7", false), GridMessage("6", false), GridMessage("", true), GridMessage("9", false), GridMessage("2", false)),
-    Array(GridMessage("", true), GridMessage("7", false), GridMessage("4", false), GridMessage("2", false), GridMessage("6", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true)),
-    Array(GridMessage("", true), GridMessage("3", false), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("", true), GridMessage("6", false), GridMessage("8", false), GridMessage("", true)),
-    Array(GridMessage("5", false), GridMessage("", true), GridMessage("6", false), GridMessage("", true), GridMessage("", true), GridMessage("9", false), GridMessage("", true), GridMessage("", true), GridMessage("7", false))
-  )
 
   def create()(implicit system: ActorMaterializer): Game = {
     /*
@@ -33,7 +21,9 @@ object Game {
     val (in, out) =
       MergeHub.source[GameMessage]
         .statefulMapConcat[GameMessage] { () =>
-          var lastGame = theGame
+          val rand = new Random(System.currentTimeMillis())
+          val random_index = rand.nextInt(Sudokus.hardGames.length)
+          var lastGame = Sudokus.toProtocolGame(Sudokus.hardGames(random_index))
           var scores = Map[String, Score]()
 
           {
