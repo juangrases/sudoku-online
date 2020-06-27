@@ -18,7 +18,7 @@ input[type="text"]:disabled {
   color: #000000
 }
 
-.grid + input[type="text"]:not([disabled]) {
+input[type="text"]:not([disabled]).grid {
   color: #228B22;
   border-color: #767676;
   font-weight: bold;

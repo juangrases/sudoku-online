@@ -2,19 +2,19 @@ package web
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.scaladsl.{Flow, Sink}
+import akka.stream.Materializer
+import akka.stream.scaladsl.Flow
 import play.api.libs.json.{JsArray, Json}
-import web.Protocol.{GridMessage, MemberJoined, SudokuMessage}
+import web.Protocol.{GridMessage, SudokuMessage}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.StdIn
-import scala.util.Failure
 import scala.language.postfixOps
+import scala.util.Failure
 
 object WebServer {
   def main(args: Array[String]) {

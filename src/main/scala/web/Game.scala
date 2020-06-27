@@ -30,16 +30,12 @@ object Game {
             case m@SudokuMessage(sudoku, member, _) =>
               val updateScore = lastGame.flatten.count(_.value != "") < sudoku.flatten.count(_.value != "")
 
-
               lastGame = sudoku
               val previousScore = scores.get(member)
               if(updateScore){
                 scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
               }
               m.copy(scores = Some(scores)) :: Nil
-//            case m@SudokuMessage(sudoku, None, _) =>
-//              lastGame = sudoku
-//              m.copy(scores = Some(scores)) :: Nil
             case PollSudoku(member) =>
               SudokuMessage(lastGame, member, Some(scores)) :: Nil
 
