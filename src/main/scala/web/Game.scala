@@ -1,9 +1,9 @@
 package web
 
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import akka.stream.scaladsl._
 import sudoku.{SudokuHelper, Sudokus}
-import web.Protocol.{ChangedGrid, GameMessage, MemberLeft, PollSudoku, Score, SudokuMessage}
+import web.Protocol.{ChangedGrid, GameMessage, MemberJoined, MemberLeft, Score, SudokuMessage}
 
 import scala.util.{Random, Try}
 
@@ -29,19 +29,16 @@ object Game {
 
           {
             case m@SudokuMessage(sudoku, member, Some(ChangedGrid(value, row, col)), _) =>
+              val previousScore = scores.get(member)
               if (solvedSudoku.v(row)(col).value.get == value.toInt) {
-
                 lastGame = sudoku
-                val previousScore = scores.get(member)
                 scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
-
                 m.copy(scores = Some(scores)) :: Nil
               } else {
-                val previousScore = scores.get(member)
                 scores = scores + (member -> previousScore.map(p => p.copy(wrongs = p.wrongs + 1)).getOrElse(Score(1, 0)))
                 SudokuMessage(lastGame, member, None, Some(scores)) :: Nil
               }
-            case PollSudoku(member) =>
+            case Protocol.MemberJoined(member) =>
               scores = scores + (member -> Score(0,0))
               SudokuMessage(lastGame, member, None, Some(scores)) :: Nil
             case Protocol.MemberLeft(member) =>
@@ -68,7 +65,7 @@ object Game {
     (member: String) =>
       Flow[GameMessage]
         //Allow new players that just joined to get latest Sudoku
-        .prepend(Source.single(PollSudoku(member)))
+        .prepend(Source.single(MemberJoined(member)))
         .concat(Source.single(MemberLeft(member)))
         .via(chatChannel)
   }

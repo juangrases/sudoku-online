@@ -10,7 +10,7 @@ object Protocol {
                            member: String,
                            changedGrid: Option[ChangedGrid],
                            scores: Option[Map[String, Score]]) extends GameMessage
-  case class PollSudoku(member: String) extends GameMessage
+  case class MemberJoined(member: String) extends GameMessage
   case class MemberLeft(member: String) extends GameMessage
   case class Members(allMembers: Seq[String]) extends GameMessage
   case class Score(wrongs: Int, successes: Int) extends GameMessage
