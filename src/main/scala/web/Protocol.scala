@@ -9,8 +9,8 @@ object Protocol {
   case class PollSudoku(member: String) extends GameMessage
   case class WrongMove(member: String) extends GameMessage
   case class MemberJoined(member: String) extends GameMessage
-  case class Members(allMembers: Seq[String]) extends GameMessage
   case class MemberLeft(member: String) extends GameMessage
+  case class Members(allMembers: Seq[String]) extends GameMessage
   case class Score(wrongs: Int, successes: Int) extends GameMessage
 
 

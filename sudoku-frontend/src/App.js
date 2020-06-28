@@ -47,14 +47,16 @@ class App extends React.Component {
 	changeValue = (rowIndex, columnIndex) => (event) => {
 		console.log("change value")
 		const value = event.target.value
-		this.setState(state => {
-			state.sudoku[rowIndex][columnIndex] = {value, editable: true}
-			return {
-				sudoku: state.sudoku
-			}
-		}, () => {
-			socket.send(JSON.stringify(this.state.sudoku))
-		})
+		if(value !== "") {
+			this.setState(state => {
+				state.sudoku[rowIndex][columnIndex] = {value, editable: true}
+				return {
+					sudoku: state.sudoku
+				}
+			}, () => {
+				socket.send(JSON.stringify(this.state.sudoku))
+			})
+		}
 	}
 
 	render () {

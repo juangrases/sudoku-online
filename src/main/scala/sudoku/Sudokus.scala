@@ -32,7 +32,7 @@ object Sudokus {
     )
   )
 
-  def toProtocolGame(s: Array[Array[Option[Int]]]): Array[Array[GridMessage]] = {
+  def toSudokuMessage(s: Array[Array[Option[Int]]]): Array[Array[GridMessage]] = {
     s.map(_.map{
       case Some(n) => GridMessage(n.toString, editable = false)
       case None =>   GridMessage("", editable = true)

@@ -19,7 +19,7 @@ class SudokuSolverTest extends AnyFlatSpec{
       Array(Some(7),Some(6),Some(3),Some(4),Some(1),Some(8),Some(2),Some(5),Some(9)),
     )
 
-    val candidates: Set[Int] = SudokuHelper.computeCandidates(SGrid(None, Set(1,2,3,4,5,6,7,8,9), Position(0,0)), SudokuHelper.toSudokuWithCandidates(sudoku))
+    val candidates: Set[Int] = SudokuHelper.computeCandidates(SudokuHelper.toSudokuWithCandidates(sudoku), SGrid(None, Set(1,2,3,4,5,6,7,8,9), Position(0,0)))
 
     assertResult(1)(candidates.size)
     assert(candidates(4))

@@ -23,7 +23,7 @@ object Game {
         .statefulMapConcat[GameMessage] { () =>
           val rand = new Random(System.currentTimeMillis())
           val random_index = rand.nextInt(Sudokus.hardGames.length)
-          var lastGame = Sudokus.toProtocolGame(Sudokus.hardGames(random_index))
+          var lastGame = Sudokus.toSudokuMessage(Sudokus.hardGames(random_index))
           var scores = Map[String, Score]()
 
           {
