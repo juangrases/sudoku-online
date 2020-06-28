@@ -3,7 +3,7 @@ package web
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl._
 import sudoku.{SudokuHelper, Sudokus}
-import web.Protocol.{GameMessage, GridMessage, MemberJoined, MemberLeft, PollSudoku, Score, SudokuMessage, WrongMove}
+import web.Protocol.{ChangedGrid, GameMessage, MemberLeft, PollSudoku, Score, SudokuMessage}
 
 import scala.util.{Random, Try}
 
@@ -21,29 +21,31 @@ object Game {
     val (in, out) =
       MergeHub.source[GameMessage]
         .statefulMapConcat[GameMessage] { () =>
-          val rand = new Random(System.currentTimeMillis())
-          val random_index = rand.nextInt(Sudokus.hardGames.length)
-          var lastGame = Sudokus.toSudokuMessage(Sudokus.hardGames(random_index))
+          var lastGame = getRandomSudoku
           var scores = Map[String, Score]()
 
+          val candidates = SudokuHelper.toSudokuWithCandidates(lastGame.map(_.map(v => if (v.value == "") None else Try(v.value.toInt).toOption)))
+          val solvedSudoku = SudokuHelper.solveSudoku(candidates).get
+
           {
-            case m@SudokuMessage(sudoku, member, _) =>
-              val updateScore = lastGame.flatten.count(_.value != "") < sudoku.flatten.count(_.value != "")
+            case m@SudokuMessage(sudoku, member, Some(ChangedGrid(value, row, col)), _) =>
+              if (solvedSudoku.v(row)(col).value.get == value.toInt) {
 
-              lastGame = sudoku
-              val previousScore = scores.get(member)
-              if(updateScore){
+                lastGame = sudoku
+                val previousScore = scores.get(member)
                 scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
+
+                m.copy(scores = Some(scores)) :: Nil
+              } else {
+                val previousScore = scores.get(member)
+                scores = scores + (member -> previousScore.map(p => p.copy(wrongs = p.wrongs + 1)).getOrElse(Score(1, 0)))
+                SudokuMessage(lastGame, member, None, Some(scores)) :: Nil
               }
-              m.copy(scores = Some(scores)) :: Nil
             case PollSudoku(member) =>
-              SudokuMessage(lastGame, member, Some(scores)) :: Nil
-
-            case WrongMove(member) =>
-              val previousScore = scores.get(member)
-              scores = scores + (member -> previousScore.map(p => p.copy(wrongs = p.wrongs + 1)).getOrElse(Score(1, 0)))
-              SudokuMessage(lastGame, member, Some(scores)) :: Nil
-
+              scores = scores + (member -> Score(0,0))
+              SudokuMessage(lastGame, member, None, Some(scores)) :: Nil
+            case Protocol.MemberLeft(member) =>
+              SudokuMessage(lastGame, member, None, Some(scores.removed(member))) :: Nil
             case x => x :: Nil
           }
         }
@@ -51,9 +53,6 @@ object Game {
           var members = Set.empty[String]
 
           {
-            case Protocol.MemberJoined(newMember) =>
-              members += newMember
-              Protocol.Members(members.toSeq) :: Nil
             case Protocol.MemberLeft(member) =>
               members -= member
               Protocol.Members(members.toSeq) :: Nil
@@ -68,21 +67,15 @@ object Game {
 
     (member: String) =>
       Flow[GameMessage]
-        .map {
-          case m@SudokuMessage(sudoku, _, _) =>
-            val candidates = SudokuHelper.toSudokuWithCandidates(sudoku.map(_.map(v => if (v.value == "") None else Try(v.value.toInt).toOption)))
-            SudokuHelper.solveSudoku(candidates) match {
-              case None =>
-                WrongMove(member)
-              case Some(_) =>
-                m
-            }
-          case m => m
-        }
         //Allow new players that just joined to get latest Sudoku
         .prepend(Source.single(PollSudoku(member)))
-        .prepend(Source.single(MemberJoined(member)))
         .concat(Source.single(MemberLeft(member)))
         .via(chatChannel)
+  }
+
+  private def getRandomSudoku = {
+    val rand = new Random(System.currentTimeMillis())
+    val random_index = rand.nextInt(Sudokus.hardGames.length)
+    Sudokus.toSudokuMessage(Sudokus.hardGames(random_index))
   }
 }

@@ -10,7 +10,6 @@ class App extends React.Component {
 	state = {
 		name: '',
 		isNameSet: false,
-		allMembers: [],
 	}
 
 	handleChange = (event) => {
@@ -36,10 +35,6 @@ class App extends React.Component {
 					return {sudoku: newSudoku, scores}
 				})
 			}
-			if (json.allMembers) {
-				const allMembers = json.allMembers
-				this.setState({allMembers})
-			}
 		}
 		this.setState({isNameSet: true})
 	}
@@ -54,13 +49,13 @@ class App extends React.Component {
 					sudoku: state.sudoku
 				}
 			}, () => {
-				socket.send(JSON.stringify(this.state.sudoku))
+				socket.send(JSON.stringify({sudoku: this.state.sudoku, changedGrid: {row: rowIndex, col: columnIndex, value: value}}))
 			})
 		}
 	}
 
 	render () {
-		const {isNameSet, name, sudoku, allMembers, scores} = this.state
+		const {isNameSet, name, sudoku, scores} = this.state
 		if (!isNameSet) {
 			return (
 				<Welcome name={name} handleSubmit={this.handleSubmit} handleChange={this.handleChange}/>
@@ -74,7 +69,7 @@ class App extends React.Component {
 				<Sudoku sudoku={sudoku}
 								changeValue={this.changeValue}/>
 
-				<Score allMembers={allMembers} scores={scores}/>
+				<Score scores={scores}/>
 			</div>
 		)
 

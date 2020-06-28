@@ -8,7 +8,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
 import play.api.libs.json.{JsArray, Json}
-import web.Protocol.{GridMessage, SudokuMessage}
+import web.Protocol.{ChangedGrid, GridMessage, SudokuMessage}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -35,24 +35,18 @@ object WebServer {
       When first person joins
        */
       Flow[Message]
-        .mapAsync(1){
+        .mapAsync(1) {
           case e: TextMessage =>
             e.toStrict(2 seconds)
           case e => Future.successful(e)
         }
         .collect {
           case TextMessage.Strict(msg) =>
+           val jsonValue = Json.parse(msg)
             SudokuMessage(
-              Json.parse(msg).as[JsArray]
-                .value
-                .toArray
-                .map(
-                  _.as[JsArray]
-                    .value
-                    .map(gJson => GridMessage((gJson \ "value").as[String], (gJson \ "editable").as[Boolean]))
-                    .toArray
-                ),
+              (jsonValue \ "sudoku").as[Array[Array[GridMessage]]],
               name,
+              (jsonValue \ "changedGrid").asOpt[ChangedGrid],
               None
             )
         }
@@ -82,8 +76,8 @@ object WebServer {
             getFromFile(s"src/main/public$remaining")
           }
         },
-        extractUnmatchedPath{ remaining =>
-          getFromFile(s"sudoku-frontend/build"+remaining)
+        extractUnmatchedPath { remaining =>
+          getFromFile(s"sudoku-frontend/build" + remaining)
         },
         path("game") {
           parameter("name") { name =>
