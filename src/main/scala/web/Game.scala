@@ -42,20 +42,12 @@ object Game {
               scores = scores + (member -> Score(0,0))
               SudokuMessage(lastGame, member, None, Some(scores)) :: Nil
             case Protocol.MemberLeft(member) =>
-              SudokuMessage(lastGame, member, None, Some(scores.removed(member))) :: Nil
+              scores = scores.removed(member)
+              SudokuMessage(lastGame, member, None, Some(scores)) :: Nil
             case x => x :: Nil
           }
         }
-        .statefulMapConcat[GameMessage] { () =>
-          var members = Set.empty[String]
 
-          {
-            case Protocol.MemberLeft(member) =>
-              members -= member
-              Protocol.Members(members.toSeq) :: Nil
-            case x => x :: Nil
-          }
-        }
         //Bring elements too all materialized sources attach, meaning every element for every chat member
         .toMat(BroadcastHub.sink[GameMessage])(Keep.both)
         .run()
