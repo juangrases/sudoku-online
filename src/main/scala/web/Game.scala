@@ -4,10 +4,10 @@ package web
  From https://github.com/jrudolph/akka-http-scala-js-websocket-chat
  */
 
-import akka.stream.{Materializer, OverflowStrategy}
 import akka.stream.scaladsl._
+import akka.stream.{Materializer, OverflowStrategy}
 import sudoku.{SudokuHelper, Sudokus}
-import web.Protocol.{ChangedGrid, GameMessage, GameState, GridMessage, MemberJoined, MemberLeft, NextTurn, Score}
+import web.Protocol.{GameMessage, GameState, GridMessage, MemberJoined, MemberLeft, NextTurn, Score}
 
 import scala.util.{Random, Try}
 
@@ -28,7 +28,7 @@ object Game {
       MergeHub.source[GameMessage]
         .mergeMat(Source.queue[Protocol.GameMessage](100, OverflowStrategy.dropNew))(Keep.both)
         .statefulMapConcat[GameMessage] { () =>
-          var lastGame = getRandomSudoku
+          val lastGame = getRandomSudoku
           var scores = Map[String, Score]()
           var currentTurnPos = 0
           var currentTurn: Option[String] = None
@@ -44,26 +44,26 @@ object Game {
                 lastGame(row)(col) = GridMessage(value, true)
                 scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
 
-                GameState(lastGame, currentTurn, Some(scores)) :: Nil
+                GameState(lastGame, currentTurn, scores) :: Nil
               } else {
                 scores = scores + (member -> previousScore.map(p => p.copy(wrongs = p.wrongs + 1)).getOrElse(Score(1, 0)))
-                GameState(lastGame, currentTurn, Some(scores)) :: Nil
+                GameState(lastGame, currentTurn, scores) :: Nil
               }
             case Protocol.MemberJoined(member) =>
               scores = scores + (member -> Score(0, 0))
               currentTurn = Option(currentTurn.getOrElse(member))
-              GameState(lastGame, currentTurn, Some(scores)) :: Nil
+              GameState(lastGame, currentTurn, scores) :: Nil
 
-            case NextTurn(None) =>
+            case NextTurn() =>
               val currentMembers = scores.keys.toArray
               currentTurnPos = (currentTurnPos + 1) % currentMembers.size
               currentTurn = Some(currentMembers(currentTurnPos))
               println(s"new turn is for $currentTurn")
-              GameState(lastGame, currentTurn, Some(scores)) :: Nil
+              GameState(lastGame, currentTurn, scores) :: Nil
 
             case Protocol.MemberLeft(member) =>
               scores = scores.removed(member)
-              GameState(lastGame, currentTurn, Some(scores)) :: Nil
+              GameState(lastGame, currentTurn, scores) :: Nil
 
             case x => x :: Nil
           }

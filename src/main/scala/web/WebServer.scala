@@ -38,7 +38,7 @@ object WebServer {
       if(cancellable.isEmpty){
         cancellable = Some(
           system.scheduler.scheduleAtFixedRate(15 second, 15.second) { () =>
-            theChat.injectMessage(NextTurn(None))
+            theChat.injectMessage(NextTurn())
           }
         )
       }
