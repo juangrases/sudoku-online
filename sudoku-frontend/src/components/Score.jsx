@@ -1,7 +1,6 @@
 import React from 'react'
 
 const Score = ({scores}) => {
-	console.log(scores)
 	return (
 		<div>
 			<h2>Current members:</h2>

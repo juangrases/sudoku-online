@@ -10,6 +10,26 @@ class App extends React.Component {
 	state = {
 		name: '',
 		isNameSet: false,
+		currentTime: 30,
+		lastMoveWithSuccess: false
+	}
+
+	TURN_TIME = 45
+
+	startTimer (remainingTime) {
+		this.stopTimer()
+		this.setState({remaining: remainingTime})
+		this.timer = setInterval(() => this.setState(({remaining}) => {
+			return {remaining: remaining === 0 ? this.TURN_TIME : remaining - 1}
+		}), 1000)
+	}
+
+	stopTimer () {
+		clearInterval(this.timer)
+	}
+
+	resetTimer () {
+		this.setState({remaining: this.TURN_TIME})
 	}
 
 	handleChange = (event) => {
@@ -23,24 +43,31 @@ class App extends React.Component {
 			console.log('received message')
 			const message = event.data
 			const json = JSON.parse(message)
-			const newSudoku = json.sudoku
-			const currentTurn = json.currentTurn
-			const scores = json.scores
-			this.setState(({sudoku}) => {
-				if (JSON.stringify(newSudoku) === JSON.stringify(sudoku)) {
-					console.log('Good move!')
-				} else {
-					console.log('Bad move')
+			const {sudoku, currentTurn, scores, lastStartTime} = json
+			// const newSudoku = json.sudoku
+			// const currentTurn = json.currentTurn
+			// const scores = json.scores
+			this.setState((oldState) => {
+				const goodMove = JSON.stringify(sudoku) === JSON.stringify(oldState.sudoku)
+
+				if (oldState.currentTurn !== currentTurn) {
+					this.resetTimer()
 				}
-				return {sudoku: newSudoku, scores, currentTurn}
+
+				//Question: When to start the timer
+				const remaining = this.TURN_TIME - parseInt((Date.now() - lastStartTime) / 1000, 10)
+				this.startTimer(remaining)
+
+
+				return {sudoku: sudoku, scores, currentTurn, remaining}
 			})
 
 		}
+
 		this.setState({isNameSet: true})
 	}
 
 	changeValue = (rowIndex, columnIndex) => (event) => {
-		console.log('change value')
 		const value = event.target.value
 		if (value !== '') {
 			this.setState(state => {
@@ -55,7 +82,7 @@ class App extends React.Component {
 	}
 
 	render () {
-		const {isNameSet, name, sudoku, scores, currentTurn} = this.state
+		const {isNameSet, name, sudoku, scores, currentTurn, remaining} = this.state
 		if (!isNameSet) {
 			return (
 				<Welcome name={name} handleSubmit={this.handleSubmit} handleChange={this.handleChange}/>
@@ -65,8 +92,8 @@ class App extends React.Component {
 			return null
 		}
 		return (
-			<div>
-				<h1 style={{textAlign: 'center'}}>{currentTurn} has the current turn</h1>
+			<div disabled={currentTurn !== name}>
+				<h1 style={{textAlign: 'center'}}>{currentTurn} has the current turn - Time remaining {remaining}</h1>
 				<Sudoku sudoku={sudoku}
 								changeValue={this.changeValue}/>
 

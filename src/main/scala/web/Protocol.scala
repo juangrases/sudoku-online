@@ -11,6 +11,7 @@ object Protocol {
 
   case class GameState(sudoku: Array[Array[GridMessage]],
                        currentTurn: Option[String],
+                       lastStartTime: Option[Long],
                        scores: Map[String, Score]) extends GameMessage
 
 

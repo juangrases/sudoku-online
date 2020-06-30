@@ -32,6 +32,7 @@ object Game {
           var scores = Map[String, Score]()
           var currentTurnPos = 0
           var currentTurn: Option[String] = None
+          var lastTypeStarted: Option[Long] = None
 
           val candidates = SudokuHelper.toSudokuWithCandidates(lastGame.map(_.map(v => if (v.value == "") None else Try(v.value.toInt).toOption)))
           val solvedSudoku = SudokuHelper.solveSudoku(candidates).get
@@ -44,26 +45,38 @@ object Game {
                 lastGame(row)(col) = GridMessage(value, true)
                 scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
 
-                GameState(lastGame, currentTurn, scores) :: Nil
+                GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
               } else {
                 scores = scores + (member -> previousScore.map(p => p.copy(wrongs = p.wrongs + 1)).getOrElse(Score(1, 0)))
-                GameState(lastGame, currentTurn, scores) :: Nil
+                val currentMembers = scores.keys.toArray
+                currentTurnPos = (currentTurnPos + 1) % currentMembers.length
+                currentTurn = Some(currentMembers(currentTurnPos))
+                lastTypeStarted=Some(System.currentTimeMillis())
+                println(s"new turn is for $currentTurn")
+                GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
               }
             case Protocol.MemberJoined(member) =>
               scores = scores + (member -> Score(0, 0))
               currentTurn = Option(currentTurn.getOrElse(member))
-              GameState(lastGame, currentTurn, scores) :: Nil
+              lastTypeStarted=Option(lastTypeStarted.getOrElse(System.currentTimeMillis()))
+
+              GameState(lastGame, currentTurn, lastTypeStarted,  scores) :: Nil
 
             case NextTurn() =>
               val currentMembers = scores.keys.toArray
-              currentTurnPos = (currentTurnPos + 1) % currentMembers.size
-              currentTurn = Some(currentMembers(currentTurnPos))
-              println(s"new turn is for $currentTurn")
-              GameState(lastGame, currentTurn, scores) :: Nil
+              if(currentMembers.isEmpty){
+                currentTurn = None
+              }else{
+                currentTurnPos = (currentTurnPos + 1) % currentMembers.length
+                currentTurn = Some(currentMembers(currentTurnPos))
+                println(s"new turn is for $currentTurn")
+                lastTypeStarted=Some(System.currentTimeMillis())
+              }
+              GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
 
             case Protocol.MemberLeft(member) =>
               scores = scores.removed(member)
-              GameState(lastGame, currentTurn, scores) :: Nil
+              GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
 
             case x => x :: Nil
           }
