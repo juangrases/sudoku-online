@@ -1,14 +1,14 @@
 package web
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Materializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Source}
 import play.api.libs.json.{JsArray, Json}
-import web.Protocol.{ChangedGrid, GridMessage, SudokuMessage}
+import web.Protocol.{ChangedGrid, GridMessage, MemberJoined, NextTurn, GameState}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -28,12 +28,21 @@ object WebServer {
     val customSettings = defaultSettings.withWebsocketSettings(websocketSettings)
     val theChat = Game.create()
 
+    var cancellable: Option[Cancellable] = None
+
     //For every browser websocket connection, a Flow is created
     def websocketGameFlow(name: String): Flow[Message, Message, Any] = {
       println("New connection from " + name)
-      /*
-      When first person joins
-       */
+
+
+      if(cancellable.isEmpty){
+        cancellable = Some(
+          system.scheduler.scheduleAtFixedRate(15 second, 15.second) { () =>
+            theChat.injectMessage(NextTurn(None))
+          }
+        )
+      }
+
       Flow[Message]
         .mapAsync(1) {
           case e: TextMessage =>
@@ -42,19 +51,18 @@ object WebServer {
         }
         .collect {
           case TextMessage.Strict(msg) =>
-           val jsonValue = Json.parse(msg)
-            SudokuMessage(
-              (jsonValue \ "sudoku").as[Array[Array[GridMessage]]],
+            val jsonValue = Json.parse(msg)
+            ChangedGrid(
               name,
-              (jsonValue \ "changedGrid").asOpt[ChangedGrid],
-              None
+              (jsonValue \ "value").as[String],
+              (jsonValue \ "row").as[Int],
+              (jsonValue \ "col").as[Int]
             )
         }
         .via(theChat.gameFlow(name)) // ... and route them through the chatFlow ...
+        //Create a single game state message
         .collect {
-          case m: Protocol.SudokuMessage =>
-            TextMessage.Strict(Json.stringify(Json.toJson(m))) // ... pack outgoing messages into WS JSON messages ...
-          case m: Protocol.Members =>
+          case m: Protocol.GameState =>
             TextMessage.Strict(Json.stringify(Json.toJson(m)))
         }
         .via(reportErrorsFlow) // ... then log any processing errors on stdin

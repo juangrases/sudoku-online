@@ -7,8 +7,7 @@ const Score = ({scores}) => {
 			<h2>Current members:</h2>
 			<ul>
 				{Object.entries(scores).map(([name, score]) => {
-					const computedScore = score ? score : {}
-					return (<li key={name}>{name} - {computedScore.successes}/{computedScore.wrongs}</li>)
+					return (<li key={name}>{name} - {score.successes}/{score.wrongs}</li>)
 				})}
 			</ul>
 		</div>
