@@ -34,15 +34,6 @@ object WebServer {
     def websocketGameFlow(name: String): Flow[Message, Message, Any] = {
       println("New connection from " + name)
 
-
-      if(cancellable.isEmpty){
-        cancellable = Some(
-          system.scheduler.scheduleAtFixedRate(45 second, 45.second) { () =>
-            theChat.injectMessage(NextTurn())
-          }
-        )
-      }
-
       Flow[Message]
         .mapAsync(1) {
           case e: TextMessage =>

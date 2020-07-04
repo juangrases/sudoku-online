@@ -4,12 +4,14 @@ package web
  From https://github.com/jrudolph/akka-http-scala-js-websocket-chat
  */
 
+import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.{Materializer, OverflowStrategy}
 import sudoku.{SudokuHelper, Sudokus}
 import web.Protocol.{GameMessage, GameState, GridMessage, MemberJoined, MemberLeft, NextTurn, Score}
 
 import scala.util.{Random, Try}
+import scala.concurrent.duration._
 
 trait Game {
   def gameFlow(member: String): Flow[GameMessage, GameMessage, Any]
@@ -19,7 +21,8 @@ trait Game {
 
 object Game {
 
-  def create()(implicit system: Materializer): Game = {
+  def create()(implicit system: ActorSystem): Game = {
+    implicit val executionContext = system.dispatcher
     /*
     This pattern allows to have a broadcast every message to everyone approach by configuring a Source from all
     the incoming web sockets, and a Sink for all the web sockets
@@ -53,16 +56,19 @@ object Game {
                 currentTurn = Some(currentMembers(currentTurnPos))
                 lastTypeStarted=Some(System.currentTimeMillis())
                 println(s"new turn is for $currentTurn")
-                GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
+                NextTurn() :: GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
               }
             case Protocol.MemberJoined(member) =>
               scores = scores + (member -> Score(0, 0))
+              //If no current turn yet, set it for the user that just joined
               currentTurn = Option(currentTurn.getOrElse(member))
               lastTypeStarted=Option(lastTypeStarted.getOrElse(System.currentTimeMillis()))
 
-              GameState(lastGame, currentTurn, lastTypeStarted,  scores) :: Nil
+              NextTurn() :: GameState(lastGame, currentTurn, lastTypeStarted,  scores) :: Nil
 
-            case NextTurn() =>
+            case a@NextTurn() =>
+              //Update the current turn to the next turn
+              println("receiving new turn")
               val currentMembers = scores.keys.toArray
               if(currentMembers.isEmpty){
                 currentTurn = None
@@ -72,7 +78,7 @@ object Game {
                 println(s"new turn is for $currentTurn")
                 lastTypeStarted=Some(System.currentTimeMillis())
               }
-              GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
+              a :: GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
 
             case Protocol.MemberLeft(member) =>
               scores = scores.removed(member)
@@ -86,7 +92,19 @@ object Game {
         .toMat(BroadcastHub.sink[GameMessage])(Keep.both)
         .run()
 
-    val chatChannel: Flow[GameMessage, GameMessage, Any] = Flow.fromSinkAndSource(in, out)
+    val s = Flow[GameMessage].mapConcat {
+      case a@NextTurn() =>
+        println("Next turn on the other sink")
+        system.scheduler.scheduleOnce(45.second) { () =>
+          injectionQueue.offer(NextTurn())
+        }
+        Nil
+      case a => a :: Nil
+    }
+
+//    out.runWith(s)
+
+    val chatChannel: Flow[GameMessage, GameMessage, Any] = Flow.fromSinkAndSource(in, out.via(s))
     new Game {
 
 
