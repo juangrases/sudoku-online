@@ -28,8 +28,6 @@ object WebServer {
     val customSettings = defaultSettings.withWebsocketSettings(websocketSettings)
     val theChat = Game.create()
 
-    var cancellable: Option[Cancellable] = None
-
     //For every browser websocket connection, a Flow is created
     def websocketGameFlow(name: String): Flow[Message, Message, Any] = {
       println("New connection from " + name)

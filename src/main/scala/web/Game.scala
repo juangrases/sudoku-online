@@ -22,6 +22,7 @@ trait Game {
 object Game {
 
   def create()(implicit system: ActorSystem): Game = {
+    val turnDurationSeconds = 20
     implicit val executionContext = system.dispatcher
     /*
     This pattern allows to have a broadcast every message to everyone approach by configuring a Source from all
@@ -48,7 +49,7 @@ object Game {
                 lastGame(row)(col) = GridMessage(value, true)
                 scores = scores + (member -> previousScore.map(p => p.copy(successes = p.successes + 1)).getOrElse(Score(0, 1)))
 
-                GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
+                GameState(lastGame, currentTurn, lastTypeStarted, scores, turnDurationSeconds) :: Nil
               } else {
                 scores = scores + (member -> previousScore.map(p => p.copy(wrongs = p.wrongs + 1)).getOrElse(Score(1, 0)))
                 val currentMembers = scores.keys.toArray
@@ -56,15 +57,21 @@ object Game {
                 currentTurn = Some(currentMembers(currentTurnPos))
                 lastTypeStarted=Some(System.currentTimeMillis())
                 println(s"new turn is for $currentTurn")
-                NextTurn() :: GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
+                NextTurn() :: GameState(lastGame, currentTurn, lastTypeStarted, scores, turnDurationSeconds) :: Nil
               }
             case Protocol.MemberJoined(member) =>
+              val fistMember = scores.isEmpty
               scores = scores + (member -> Score(0, 0))
               //If no current turn yet, set it for the user that just joined
               currentTurn = Option(currentTurn.getOrElse(member))
               lastTypeStarted=Option(lastTypeStarted.getOrElse(System.currentTimeMillis()))
 
-              NextTurn() :: GameState(lastGame, currentTurn, lastTypeStarted,  scores) :: Nil
+              val newGameState = GameState(lastGame, currentTurn, lastTypeStarted, scores, turnDurationSeconds)
+              if(fistMember){
+                NextTurn() :: newGameState :: Nil
+              }else{
+                newGameState :: Nil
+              }
 
             case a@NextTurn() =>
               //Update the current turn to the next turn
@@ -78,11 +85,11 @@ object Game {
                 println(s"new turn is for $currentTurn")
                 lastTypeStarted=Some(System.currentTimeMillis())
               }
-              a :: GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
+              a :: GameState(lastGame, currentTurn, lastTypeStarted, scores, turnDurationSeconds) :: Nil
 
             case Protocol.MemberLeft(member) =>
               scores = scores.removed(member)
-              GameState(lastGame, currentTurn, lastTypeStarted, scores) :: Nil
+              GameState(lastGame, currentTurn, lastTypeStarted, scores, turnDurationSeconds) :: Nil
 
             case x => x :: Nil
           }
@@ -92,13 +99,15 @@ object Game {
         .toMat(BroadcastHub.sink[GameMessage])(Keep.both)
         .run()
 
+
+
     val s = Flow[GameMessage].mapConcat {
-      case a@NextTurn() =>
-        println("Next turn on the other sink")
-        system.scheduler.scheduleOnce(45.second) { () =>
+      case NextTurn() =>
+        system.scheduler.scheduleOnce(turnDurationSeconds seconds) {
           injectionQueue.offer(NextTurn())
         }
         Nil
+
       case a => a :: Nil
     }
 

@@ -10,17 +10,16 @@ class App extends React.Component {
 	state = {
 		name: '',
 		isNameSet: false,
-		currentTime: 30,
 		lastMoveWithSuccess: false
 	}
 
 	TURN_TIME = 45
 
-	startTimer (remainingTime) {
+	startTimer (remainingTime, turnDuration) {
 		this.stopTimer()
 		this.setState({remaining: remainingTime})
 		this.timer = setInterval(() => this.setState(({remaining}) => {
-			return {remaining: remaining === 0 ? this.TURN_TIME : remaining - 1}
+			return {remaining: remaining === 0 ? turnDuration : remaining - 1}
 		}), 1000)
 	}
 
@@ -43,20 +42,20 @@ class App extends React.Component {
 			console.log('received message')
 			const message = event.data
 			const json = JSON.parse(message)
-			const {sudoku, currentTurn, scores, lastStartTime} = json
+			const {sudoku, currentTurn, scores, lastStartTime, turnDuration} = json
 			// const newSudoku = json.sudoku
 			// const currentTurn = json.currentTurn
 			// const scores = json.scores
 			this.setState((oldState) => {
 				const goodMove = JSON.stringify(sudoku) === JSON.stringify(oldState.sudoku)
 
-				if (oldState.currentTurn !== currentTurn) {
-					this.resetTimer()
-				}
+				// if (oldState.currentTurn !== currentTurn) {
+				// 	this.resetTimer()
+				// }
 
 				//Question: When to start the timer
-				const remaining = this.TURN_TIME - parseInt((Date.now() - lastStartTime) / 1000, 10)
-				this.startTimer(remaining)
+				const remaining = turnDuration - parseInt((Date.now() - lastStartTime) / 1000, 10)
+				this.startTimer(remaining, turnDuration)
 
 
 				return {sudoku: sudoku, scores, currentTurn, remaining}

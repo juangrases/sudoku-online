@@ -12,7 +12,8 @@ object Protocol {
   case class GameState(sudoku: Array[Array[GridMessage]],
                        currentTurn: Option[String],
                        lastStartTime: Option[Long],
-                       scores: Map[String, Score]) extends GameMessage
+                       scores: Map[String, Score],
+                       turnDuration: Int) extends GameMessage
 
 
   case class ChangedGrid(member: String, value: String, row: Int, col: Int) extends GameMessage
